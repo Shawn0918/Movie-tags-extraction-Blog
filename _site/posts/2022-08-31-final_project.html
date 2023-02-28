@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Shawn Shisen Yue">
+<meta name="dcterms.date" content="2022-08-31">
+<meta name="description" content="This notebook performs an exploratory analysis to a Netflix movies and TV-shows dataset and applies the LDA model to extract the topic words from a given category of movie descriptions.">
+
+<title>Movie-tags-extraction-Blog - 🎬 Movie Tags Extraction with LDA Model</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Movie-tags-extraction-Blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com"><i class="bi bi-twitter" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">🎬 Movie Tags Extraction with LDA Model</h1>
+                  <div>
+        <div class="description">
+          This notebook performs an exploratory analysis to a Netflix movies and TV-shows dataset and applies the LDA model to extract the topic words from a given category of movie descriptions.
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">fastpages</div>
+                <div class="quarto-category">jupyter</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Shawn Shisen Yue </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">August 31, 2022</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a>
+  <ul class="collapse">
+  <li><a href="#dataset-introduction" id="toc-dataset-introduction" class="nav-link" data-scroll-target="#dataset-introduction">Dataset Introduction</a></li>
+  <li><a href="#lda-model" id="toc-lda-model" class="nav-link" data-scroll-target="#lda-model">LDA model</a></li>
+  </ul></li>
+  <li><a href="#exploratory-analysis-results" id="toc-exploratory-analysis-results" class="nav-link" data-scroll-target="#exploratory-analysis-results">📊 Exploratory Analysis &amp; Results</a>
+  <ul class="collapse">
+  <li><a href="#data-preprocessing" id="toc-data-preprocessing" class="nav-link" data-scroll-target="#data-preprocessing">1. 🎥 Data Preprocessing</a></li>
+  <li><a href="#exploratory-analysis" id="toc-exploratory-analysis" class="nav-link" data-scroll-target="#exploratory-analysis">2. 📈Exploratory Analysis</a></li>
+  <li><a href="#visualization-1" id="toc-visualization-1" class="nav-link" data-scroll-target="#visualization-1">Visualization 1</a></li>
+  <li><a href="#visualization-2" id="toc-visualization-2" class="nav-link" data-scroll-target="#visualization-2">Visualization 2</a></li>
+  <li><a href="#visualization-3" id="toc-visualization-3" class="nav-link" data-scroll-target="#visualization-3">Visualization 3</a></li>
+  <li><a href="#visualization-4" id="toc-visualization-4" class="nav-link" data-scroll-target="#visualization-4">Visualization 4</a></li>
+  <li><a href="#visualization-5" id="toc-visualization-5" class="nav-link" data-scroll-target="#visualization-5">Visualization 5</a></li>
+  <li><a href="#visualization-6" id="toc-visualization-6" class="nav-link" data-scroll-target="#visualization-6">Visualization 6</a></li>
+  <li><a href="#tags-extraction" id="toc-tags-extraction" class="nav-link" data-scroll-target="#tags-extraction">3. 🏷 Tags Extraction</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<hr>
+<p>If you are a movie fan, you might notice that in most movie recommendation websites, apart from the category the movie is classified in, there’s usually some descriptive tags attached to each movie. The tags can describe the character in the movie, such as <em>The Dark Knight</em> which has the <strong>“superhero”</strong> tag, or an element in the movie, like the tag <strong>“dinosaur”</strong> on <em>Jurassic World</em>. Sometimes, the tag could even be the name of a movie star, such as <strong>“Leonardo”</strong> on <em>Titanic</em>. From a perspective of a movie fan, it’s undoubtedly that these tags display the attractive points of the movie more vividly than the tedious classifications “Classic movies” and “Action movies”. Therefore, people began to extract tags from the content of the films, utilizing machine learning and natural language processing methods.</p>
+<p>This project is aimed to explore a Netflix movies dataset, to gain some <strong>insights</strong> about <strong>movie industry</strong> and make an attempt to extract some tags from the <strong>movie descriptions</strong>.</p>
+</section>
+<section id="methods" class="level2">
+<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<hr>
+<section id="dataset-introduction" class="level3">
+<h3 class="anchored" data-anchor-id="dataset-introduction">Dataset Introduction</h3>
+<p>This notebook includes a movie dataset from <a href="https://www.kaggle.com/datasets/shivamb/netflix-shows" class="uri">https://www.kaggle.com/datasets/shivamb/netflix-shows</a>, which consists of listings of all the <strong>movies</strong> and <strong>TV-shows</strong> available on <strong>Netflix</strong>, along with details such as - cast, directors, ratings, release year, duration, etc.</p>
+<p>Specifically, here’s the meaning of each column in the dataset:</p>
+<pre><code>show_id: Unique ID for every Movie / Tv Show 
+type: Identifier - A Movie or TV Show
+title: Title of the Movie / Tv Show
+director: Director of the Movie
+cast: Actors involved in the movie / show
+country: Country where the movie / show was produced
+date_added: Date it was added on Netflix
+release_year: Actual Release year of the move / show
+rating: TV Rating of the movie / show
+duration: Total Duration - in minutes or number of seasons
+listed_in: Genere
+description: The summary description</code></pre>
+</section>
+<section id="lda-model" class="level3">
+<h3 class="anchored" data-anchor-id="lda-model">LDA model</h3>
+<p>Latent Dirichlet allocation (LDA) is a widey used <strong>topic-generating</strong> model. The model can identify the representative topics underlying a <strong>document collection</strong> or a <strong>corpus</strong>. This model produces topics based on <strong>bag-of-word feature</strong>, that each document is represented as a vector, in which every word corresponds to an id and its <strong>appearing frequency</strong> in the document. When producing the topics, The model samples a document-specific multinomial distribution over topics from Dirichlet distribution, and samples the word in the document from the corresponding multinomial distribution.</p>
+</section>
+</section>
+<section id="exploratory-analysis-results" class="level2">
+<h2 class="anchored" data-anchor-id="exploratory-analysis-results">📊 Exploratory Analysis &amp; Results</h2>
+<hr>
+<section id="data-preprocessing" class="level3">
+<h3 class="anchored" data-anchor-id="data-preprocessing">1. 🎥 Data Preprocessing</h3>
+<blockquote class="blockquote">
+<p>Import the libraries</p>
+</blockquote>
+<div class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> nltk</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ipywidgets</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gensim</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> wordcloud</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> altair</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nltk.tokenize <span class="im">import</span> word_tokenize, sent_tokenize</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nltk.corpus <span class="im">import</span> stopwords</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> string <span class="im">import</span> punctuation</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nltk.stem.porter <span class="im">import</span> PorterStemmer</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gensim <span class="im">import</span> corpora, models</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Import the dataset and create a dataframe for movies</p>
+</blockquote>
+<div class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_csv(<span class="st">"data/netflix_titles.csv"</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>movies <span class="op">=</span> df[df[<span class="st">"type"</span>]<span class="op">==</span><span class="st">"Movie"</span>]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>movies.index <span class="op">=</span> <span class="bu">range</span>(<span class="bu">len</span>(movies))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Column information</p>
+</blockquote>
+<div class="cell" data-execution_count="3">
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;class 'pandas.core.frame.DataFrame'&gt;
+RangeIndex: 6131 entries, 0 to 6130
+Data columns (total 12 columns):
+ #   Column        Non-Null Count  Dtype 
+---  ------        --------------  ----- 
+ 0   show_id       6131 non-null   object
+ 1   type          6131 non-null   object
+ 2   title         6131 non-null   object
+ 3   director      5943 non-null   object
+ 4   cast          5656 non-null   object
+ 5   country       5691 non-null   object
+ 6   date_added    6131 non-null   object
+ 7   release_year  6131 non-null   int64 
+ 8   rating        6129 non-null   object
+ 9   duration      6128 non-null   object
+ 10  listed_in     6131 non-null   object
+ 11  description   6131 non-null   object
+dtypes: int64(1), object(11)
+memory usage: 574.9+ KB</code></pre>
+</div>
+</div>
+<blockquote class="blockquote">
+<p>Missing values visualization</p>
+</blockquote>
+<div class="cell" data-execution_count="4">
+<div class="cell-output cell-output-display" data-execution_count="4">
+<pre><code>&lt;AxesSubplot:&gt;</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-5-output-2.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿️Comment</strong>: - The missing values are distributed in columns <strong>“director”</strong>, <strong>“cast”</strong>, <strong>“country”</strong> and <strong>“duration”</strong>.</p>
+<blockquote class="blockquote">
+<p>Sample rows</p>
+</blockquote>
+<div class="cell" data-execution_count="5">
+<div class="cell-output cell-output-display" data-execution_count="5">
+
+<div>
+
+<table class="dataframe table table-sm table-striped">
+  <thead>
+    <tr>
+      <th></th>
+      <th>show_id</th>
+      <th>type</th>
+      <th>title</th>
+      <th>director</th>
+      <th>cast</th>
+      <th>country</th>
+      <th>date_added</th>
+      <th>release_year</th>
+      <th>rating</th>
+      <th>duration</th>
+      <th>listed_in</th>
+      <th>description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>2227</th>
+      <td>s3449</td>
+      <td>Movie</td>
+      <td>Brother in Love</td>
+      <td>Onur Bilgetay</td>
+      <td>Cem Gelinoğlu, Melis Babadag, Ege Kökenli, Müf...</td>
+      <td>Turkey</td>
+      <td>October 4, 2019</td>
+      <td>2019</td>
+      <td>TV-MA</td>
+      <td>110 min</td>
+      <td>Comedies, International Movies, Romantic Movies</td>
+      <td>A robbery leaves a proprietor penniless before...</td>
+    </tr>
+    <tr>
+      <th>4570</th>
+      <td>s6849</td>
+      <td>Movie</td>
+      <td>Ghost Tears</td>
+      <td>Kazuchika Kise</td>
+      <td>Maaya Sakamoto, Ikkyu Juku, Kenichirou Matsuda...</td>
+      <td>Japan</td>
+      <td>February 24, 2019</td>
+      <td>2014</td>
+      <td>TV-MA</td>
+      <td>58 min</td>
+      <td>Action &amp; Adventure, Anime Features, Internatio...</td>
+      <td>As Motoko and Batou attempt to thwart a myster...</td>
+    </tr>
+    <tr>
+      <th>3034</th>
+      <td>s4740</td>
+      <td>Movie</td>
+      <td>Being Napoleon</td>
+      <td>Jesse Handsher, Olivier Roland</td>
+      <td>Mark Schneider, Frank Samson</td>
+      <td>United States</td>
+      <td>August 1, 2018</td>
+      <td>2018</td>
+      <td>TV-MA</td>
+      <td>88 min</td>
+      <td>Documentaries</td>
+      <td>On the 200th anniversary of the Battle of Wate...</td>
+    </tr>
+    <tr>
+      <th>2129</th>
+      <td>s3281</td>
+      <td>Movie</td>
+      <td>The Garden of Words</td>
+      <td>Makoto Shinkai</td>
+      <td>Miyu Irino, Kana Hanazawa, Fumi Hirano, Takesh...</td>
+      <td>Japan</td>
+      <td>November 15, 2019</td>
+      <td>2013</td>
+      <td>TV-14</td>
+      <td>46 min</td>
+      <td>Anime Features, International Movies, Romantic...</td>
+      <td>When a lonely teenager skips his morning class...</td>
+    </tr>
+    <tr>
+      <th>5231</th>
+      <td>s7687</td>
+      <td>Movie</td>
+      <td>Outlawed</td>
+      <td>Adam Collins, Luke Radford</td>
+      <td>Adam Collins, Jessica Norris, Ian Hitchens, St...</td>
+      <td>United Kingdom</td>
+      <td>February 15, 2019</td>
+      <td>2018</td>
+      <td>TV-MA</td>
+      <td>102 min</td>
+      <td>Action &amp; Adventure</td>
+      <td>After a failed mission, an ex-Royal Marines Co...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+</div>
+<p><strong>🍿️Comment</strong>: - Based on the information in these rows, I converted the values in “duration” column into integers and the values in “date_added” column into date, to prepare them for plotting in the next section.</p>
+</section>
+<section id="exploratory-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="exploratory-analysis">2. 📈Exploratory Analysis</h3>
+</section>
+<section id="visualization-1" class="level3">
+<h3 class="anchored" data-anchor-id="visualization-1">Visualization 1</h3>
+<div class="cell" data-execution_count="9">
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿️Comment</strong>: - The histogram shows that most movies on Netflix are about 100 minutes. The longest movie contained in this dataframe is about to reach 300 minutes, nearly 5 hours.</p>
+</section>
+<section id="visualization-2" class="level3">
+<h3 class="anchored" data-anchor-id="visualization-2">Visualization 2</h3>
+<div class="cell" data-execution_count="10">
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿️Comment</strong>: - Most movies included in the dataframe are released in recent 10 years.</p>
+</section>
+<section id="visualization-3" class="level3">
+<h3 class="anchored" data-anchor-id="visualization-3">Visualization 3</h3>
+<div class="cell" data-execution_count="11">
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-12-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿️Comments</strong>: - There’s blank area between 1948 and 1953. - The duration of all movies shot before 1948 are below 100 minutes. - There’s an increase of movies duration after 1953, that most movies’ duration surpass 100 minutes and the longest one even reaches 200 minutes. - The short movies didn’t quit the stage. In recent 10 years, there are still many movies with the duration below 50 minutes.</p>
+</section>
+<section id="visualization-4" class="level3">
+<h3 class="anchored" data-anchor-id="visualization-4">Visualization 4</h3>
+<div class="cell" data-execution_count="14">
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿️Comment</strong>: - Few films produced in mainland China are available on Netflix. The number of movies on Netflix produced in Hong Kong even surpasses that of mainland China.</p>
+</section>
+<section id="visualization-5" class="level3">
+<h3 class="anchored" data-anchor-id="visualization-5">Visualization 5</h3>
+<div class="cell" data-execution_count="16">
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-17-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿️Comment</strong>: - There are many renowned directors such as “Christopher Nolan” and “Alfred Hitchcock” who have directed many well-known movies are not included, from which it’s reasonable to infer that many popular movies aren’t available on Netflix or they didn’t be collected by this dataset.</p>
+</section>
+<section id="visualization-6" class="level3">
+<h3 class="anchored" data-anchor-id="visualization-6">Visualization 6</h3>
+<div class="cell" data-execution_count="20">
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-21-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿️Comments</strong>: - Apart from those movies that have been clearly categorized, there’s a type named “Movies”, which suggests that movies in this type are not categorized due to some reason. We will examine the content of these movies and determine how should they be classified. - There aren’t clear boundary between some of the categories, which means a movie can have multiple categories. The dim boundary may confuse the viewers and thus it’s necessary to give these movies representative tags. - Through the names of some categories we can roughly predict the content of the movies. For instance, Faith &amp; Spirituality movies may contain a lot of religious elements. This provides the possibility for the afterwards tag prediction task based on the descriptions of movies.</p>
+</section>
+<section id="tags-extraction" class="level3">
+<h3 class="anchored" data-anchor-id="tags-extraction">3. 🏷 Tags Extraction</h3>
+<p>In this section, I used <strong>the LDA model</strong> to analyze the descriptions of a certain category of movie and extract the keywords to represent the category. Specifically, I first used <strong>nltk</strong> to preprocess the description texts. Then I made a <strong>dictionary</strong> and a <strong>corpus</strong> for the tokenized and stemmed words. Finally, I used the LDA model to extract the keywords depending on appearing frequency and drew the <strong>word cloud</strong> graph to visualize the result.</p>
+<blockquote class="blockquote">
+<p>Create a list to store the descriptions of movies from different categories</p>
+</blockquote>
+<div class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a list to store the descriptions of movies from different categories. </span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>DescByTypes <span class="op">=</span> []</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(categories)):</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    DescByTypes.append([movies.loc[x,<span class="st">'description'</span>] <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(movies)) <span class="cf">if</span> categories[i] <span class="kw">in</span> movies.loc[x,<span class="st">'listed_in'</span>].split(<span class="st">', '</span>)])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Create the list for documentary descriptions</p>
+</blockquote>
+<div class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># First try to predict some tags for Documentaries.</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>Documentaries <span class="op">=</span> DescByTypes[<span class="dv">0</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Tokenize the document</p>
+</blockquote>
+<div class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a list for tokenized words and remove those stop words.</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>myStopWords <span class="op">=</span> <span class="bu">list</span>(punctuation) <span class="op">+</span> stopwords.words(<span class="st">'english'</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>Docu <span class="op">=</span> []</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> Documentaries:</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    Docu.append([w <span class="cf">for</span> w <span class="kw">in</span> word_tokenize(i.lower()) <span class="cf">if</span> w <span class="kw">not</span> <span class="kw">in</span> myStopWords])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Stem the words</p>
+</blockquote>
+<div class="cell" data-execution_count="24">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stem the words in this list.</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>p_stemmer <span class="op">=</span> PorterStemmer()</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>Docu_stemmed <span class="op">=</span> []</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> Docu:</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    Docu_stemmed.append([p_stemmer.stem(w) <span class="cf">for</span> w <span class="kw">in</span> i])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Create a dictionary</p>
+</blockquote>
+<div class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a dictionary for this document.</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>dictionary <span class="op">=</span> corpora.Dictionary(Docu_stemmed)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>dictionary.filter_extremes(no_below<span class="op">=</span><span class="dv">5</span>, no_above<span class="op">=</span><span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-execution_count="26">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">#collapse-output</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(dictionary.token2id)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>{'comic': 0, 'death': 1, 'end': 2, 'face': 3, 'father': 4, 'filmmak': 5, 'help': 6, 'life': 7, 'stage': 8, 'way': 9, 'becam': 10, 'close': 11, 'document': 12, 'escap': 13, 'hitler': 14, 'presid': 15, 'reveal': 16, 'spain': 17, 'world': 18, "'s": 19, 'big': 20, 'childhood': 21, 'dream': 22, 'live': 23, 'love': 24, 'rescu': 25, 'train': 26, 'archiv': 27, 'champion': 28, 'documentari': 29, 'footag': 30, 'interview': 31, 'intim': 32, 'michael': 33, 'portrait': 34, 'trace': 35, 'bond': 36, 'extraordinari': 37, 'ideal': 38, 'meet': 39, 'tragic': 40, 'captur': 41, 'killer': 42, 'mother': 43, 'polic': 44, 'two': 45, 'victim': 46, 'women': 47, 'work': 48, 'chart': 49, 'legendari': 50, 'man': 51, 'stori': 52, 'use': 53, 'american': 54, 'challeng': 55, 'chang': 56, 'continu': 57, 'health': 58, 'tradit': 59, 'win': 60, 'gener': 61, 'last': 62, 'peopl': 63, 'togeth': 64, 'cultur': 65, 'examin': 66, 'famili': 67, 'hip-hop': 68, 'perform': 69, 'race': 70, 'rap': 71, 'song': 72, 'violenc': 73, "''": 74, '``': 75, 'advoc': 76, 'inspir': 77, 'intern': 78, 'relationship': 79, 'share': 80, 'star': 81, 'tour': 82, 'view': 83, 'boy': 84, 'run': 85, 'team': 86, '—': 87, 'art': 88, 'battl': 89, 'bob': 90, 'busi': 91, 'cast': 92, 'empir': 93, 'famou': 94, 'joy': 95, 'million': 96, '’': 97, 'becom': 98, 'first': 99, 'four': 100, 'river': 101, 'set': 102, 'come': 103, 'connect': 104, 'featur': 105, 'greatest': 106, 'human': 107, 'journey': 108, 'power': 109, 'rock': 110, 'embrac': 111, 'even': 112, 'olymp': 113, 'path': 114, 'road': 115, 'true': 116, 'crime': 117, 'narrat': 118, 'record': 119, 'seri': 120, 'abus': 121, 'martin': 122, 'person': 123, 'public': 124, 'girl': 125, 'discuss': 126, 'fan': 127, 'fight': 128, 'figur': 129, 'game': 130, 'legaci': 131, 'nba': 132, 'player': 133, 'brazilian': 134, 'citi': 135, 'crew': 136, 'decad': 137, 'film': 138, 'find': 139, 'took': 140, 'creat': 141, 'pioneer': 142, 'privat': 143, 'queen': 144, 'struggl': 145, 'commun': 146, 'devast': 147, 'movement': 148, 'speak': 149, 'survivor': 150, 'drug': 151, 'onlin': 152, 'career': 153, 'decades-long': 154, 'glimps': 155, 'delv': 156, 'call': 157, 'femal': 158, 'offic': 159, 'pay': 160, 'sexual': 161, 'album': 162, 'bring': 163, 'hit': 164, 'rapper': 165, 'camp': 166, 'championship': 167, 'compet': 168, 'emerg': 169, 'teen': 170, 'actress': 171, 'deep': 172, 'eye': 173, 'hollywood': 174, 'look': 175, 'take': 176, 'dive': 177, 'journalist': 178, 'mexican': 179, 'murder': 180, 'polit': 181, 'day': 182, 'follow': 183, 'footbal': 184, 'risk': 185, 'time': 186, 'around': 187, 'comedian': 188, 'men': 189, 'passion': 190, 'street': 191, 'final': 192, 'friend': 193, 'high': 194, 'school': 195, 'suicid': 196, 'creativ': 197, 'design': 198, 'director': 199, 'goe': 200, 'origin': 201, 'search': 202, 'age': 203, 'competit': 204, 'pursu': 205, 'sister': 206, 'three': 207, 'track': 208, 'truth': 209, 'adventur': 210, 'best': 211, 'build': 212, 'uniqu': 213, 'comedi': 214, 'experi': 215, 'free': 216, 'side': 217, 'war': 218, 'special': 219, 'chronicl': 220, 'larg': 221, 'member': 222, 'base': 223, 'divers': 224, 'emot': 225, 'five': 226, 'fuel': 227, 'young': 228, "'ve": 229, 'lead': 230, 'make': 231, 'new': 232, 'open': 233, 'scientist': 234, 'anim': 235, 'begin': 236, 'creator': 237, 'celebr': 238, 'home': 239, 'moment': 240, 'present': 241, 'showcas': 242, 'video': 243, 'crisi': 244, 'david': 245, 'earth': 246, 'known': 247, 'one': 248, 'prepar': 249, 'singer': 250, 'black': 251, 'explor': 252, 'quest': 253, 'understand': 254, 'univers': 255, 'america': 256, 'prison': 257, 'system': 258, 'year': 259, 'bomb': 260, 'gay': 261, 'london': 262, 'effect': 263, 'evolut': 264, 'genr': 265, 'activist': 266, 'amid': 267, 'controversi': 268, 'earli': 269, 'justic': 270, 'right': 271, 'endur': 272, 'recount': 273, 'club': 274, 'past': 275, 'success': 276, 'writer': 277, 'artist': 278, 'concert': 279, 'music': 280, 'tell': 281, 'discov': 282, 'woman': 283, 'camera': 284, 'student': 285, 'turn': 286, 'fall': 287, 'industri': 288, 'john': 289, 'rise': 290, '1980': 291, 'band': 292, 'sound': 293, 'former': 294, 'india': 295, 'return': 296, 'profession': 297, 'indian': 298, 'product': 299, 'scene': 300, 'seen': 301, 'behind-the-scen': 302, 'provid': 303, 'root': 304, 'york': 305, 'talk': 306, 'trauma': 307, 'kill': 308, 'line': 309, 'media': 310, 'social': 311, 'icon': 312, 'memori': 313, 'investig': 314, 'research': 315, 'answer': 316, 'behind': 317, 'disappear': 318, 'mysteri': 319, 'expos': 320, 'role': 321, 'white': 322, 'complex': 323, 'offer': 324, 'beauti': 325, 'ident': 326, 'includ': 327, 'mean': 328, 'practic': 329, 'spiritu': 330, 'ii': 331, 'corrupt': 332, 'global': 333, 'ocean': 334, 'belov': 335, 'walk': 336, 'get': 337, 'rich': 338, 'top': 339, 'us': 340, 'real': 341, 'fashion': 342, 'in-depth': 343, 'king': 344, 'notori': 345, 'rare': 346, 'air': 347, 'hous': 348, 'innov': 349, 'brazil': 350, 'hero': 351, 'nation': 352, 'talent': 353, 'turbul': 354, 'mix': 355, 'back': 356, 'countri': 357, 'land': 358, 'natur': 359, 'ground': 360, 'physic': 361, 'question': 362, 'seek': 363, 'group': 364, 'start': 365, 'danc': 366, 'effort': 367, 'program': 368, 'globe': 369, 'visual': 370, 'idol': 371, 'italian': 372, 'short': 373, 'strength': 374, 'histori': 375, 'charact': 376, 'backstag': 377, 'basketbal': 378, 'determin': 379, 'french': 380, 'led': 381, 'whose': 382, 'go': 383, 'scienc': 384, 'process': 385, 'spark': 386, 'play': 387, 'actor': 388, 'ambiti': 389, 'six': 390, 'chef': 391, 'embark': 392, 'reflect': 393, 'restaur': 394, 'spotlight': 395, 'cours': 396, 'futur': 397, 'brown': 398, 'leader': 399, 'children': 400, 'forg': 401, 'societi': 402, 'throughout': 403, 'hope': 404, 'south': 405, 'tri': 406, 'need': 407, 'shape': 408, 'award-win': 409, 'de': 410, 'la': 411, 'attempt': 412, 'unearth': 413, '1970': 414, 'strive': 415, 'mission': 416, 'save': 417, 'across': 418, 'water': 419, 'forc': 420, 'leav': 421, 'trip': 422, 'child': 423, 'detail': 424, 'daughter': 425, 'fail': 426, 'mexico': 427, 'join': 428, 'major': 429, 'superstar': 430, 'move': 431, 'insid': 432, 'influenti': 433, 'immigr': 434, 'event': 435, 'center': 436, 'differ': 437, 'africa': 438, 'african': 439, 'introduc': 440, 'combat': 441, 'expert': 442, 'may': 443, '1992': 444, 'danger': 445, 'impact': 446, 'learn': 447, 'light': 448, 'shed': 449, 'pop': 450, 'account': 451, 'domin': 452, 'athlet': 453, 'elit': 454, 'space': 455, 'cup': 456, 'highlight': 457, 'fame': 458, 'reconstruct': 459, 'secret': 460, 'small': 461, 'town': 462, 'profil': 463, 'sever': 464, 'navig': 465, 'pass': 466, 'island': 467, 'book': 468, 'frank': 469, 'produc': 470, 'suffer': 471, 'travel': 472, 'doctor': 473, 'surviv': 474, 'sport': 475, 'candid': 476, 'biggest': 477, 'compani': 478, 'tale': 479, 'other': 480, 'adult': 481, 'extrem': 482, 'musician': 483, 'jewish': 484, 'protest': 485, 'beyond': 486, 'photograph': 487, 'wave': 488, 'statu': 489, 'legend': 490, 'defin': 491, 'eleph': 492, 'govern': 493, 'driver': 494, 'racial': 495, 'break': 496, 'robert': 497, 'brother': 498, 'influenc': 499, 'ancient': 500, 'realiti': 501, 'entrepreneur': 502, 'farmer': 503, 'founder': 504, '–': 505, 'civilian': 506, 'veteran': 507, 'show': 508, 'recal': 509, 'act': 510, 'shock': 511, 'environment': 512, 'achiev': 513, 'modern': 514, 'anniversari': 515, 'nazi': 516, 'benefit': 517, 'heal': 518, 'left': 519, 'chines': 520, 'clash': 521, 'surround': 522, 'basebal': 523, 'scandal': 524, 'name': 525, 'u.s.': 526, 'unpreced': 527, 'long': 528, 'soccer': 529, 'cancer': 530, 'civil': 531, 'brutal': 532, 'ill': 533, 'roll': 534, 'tv': 535, '2012': 536, 'potenti': 537, 'sens': 538, 'shot': 539, 'histor': 540, 'grow': 541, 'worldwid': 542, 'execut': 543, 'festiv': 544, 'insight': 545, 'well': 546, 'wit': 547, 'studio': 548, 'test': 549, 'made': 550, 'master': 551, 'british': 552, 'case': 553, 'access': 554, 'jone': 555, 'campaign': 556, 'epic': 557, 'patient': 558, 'evid': 559, 'like': 560, 'mountain': 561, 'remark': 562, 'popular': 563, 'convict': 564, 'ride': 565, 'soldier': 566, 'wife': 567, 'food': 568, 'part': 569, 'teenag': 570, 'oper': 571, 'dramat': 572, 'daredevil': 573, 'form': 574, 'result': 575, 'blend': 576, 'classic': 577, 'exist': 578, 'dare': 579, 'evolv': 580, 'organ': 581}</code></pre>
+</div>
+</div>
+<p>🍿️Comment: - In this dictionary, each word corresponds to an unique number.</p>
+<blockquote class="blockquote">
+<p>Make a corpus</p>
+</blockquote>
+<div class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Make a corpus.</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>corpus <span class="op">=</span> [dictionary.doc2bow(text) <span class="cf">for</span> text <span class="kw">in</span> Docu_stemmed]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Establish the LDA model to extract keywords</p>
+</blockquote>
+<div class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train the lda model based on the dictionary and the corpus.</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>ldamodel <span class="op">=</span> gensim.models.ldamodel.LdaModel(corpus, </span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                           num_topics<span class="op">=</span><span class="dv">1</span>, </span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                                           id2word <span class="op">=</span> dictionary, </span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                                           passes<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                                           random_state<span class="op">=</span><span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Output</p>
+</blockquote>
+<div class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>ldamodel.show_topics(num_topics<span class="op">=</span><span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="29">
+<pre><code>[(0,
+  '0.039*"documentari" + 0.030*"\'s" + 0.012*"life" + 0.010*"world" + 0.010*"explor" + 0.010*"follow" + 0.009*"``" + 0.009*"\'\'" + 0.009*"film" + 0.007*"stori"')]</code></pre>
+</div>
+</div>
+<p><strong>🍿Comment</strong>: - The number in front of each word is measured based on the appearing frequency of the word in the document, and can be explained as the recommendation rate to choose the word as the topic word.<br>
+- Some of the words such as “documentary”, “explore”, and “world” accurately reflect the content of this category, which proves the feasibility of this task. - There are many punctuations and uninformative words involved in this list, so the next step is to add these strings to our stop words list to remove them from the dictionary.</p>
+<blockquote class="blockquote">
+<p>Modify the stop words list</p>
+</blockquote>
+<div class="cell" data-execution_count="30">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>myStopWords.extend([<span class="st">"'s"</span>,<span class="st">"'"</span>,<span class="st">"·"</span>,<span class="st">"``"</span>,<span class="st">'"'</span>,<span class="st">'—'</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p>Repeat the steps above</p>
+</blockquote>
+<div class="cell" data-execution_count="31">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Make an interactive visualization to reveal the predicted tags for each category.</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>Desc <span class="op">=</span> []</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> DescByTypes[<span class="dv">19</span>]:</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    Desc.append([w <span class="cf">for</span> w <span class="kw">in</span> word_tokenize(i.lower()) <span class="cf">if</span> w <span class="kw">not</span> <span class="kw">in</span> myStopWords])</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>p_stemmer <span class="op">=</span> PorterStemmer()</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>Desc_stemmed <span class="op">=</span> []</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> Desc:</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    Desc_stemmed.append([p_stemmer.stem(w) <span class="cf">for</span> w <span class="kw">in</span> i])</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>dictionary <span class="op">=</span> corpora.Dictionary(Desc_stemmed)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>dictionary.filter_extremes(no_below<span class="op">=</span><span class="dv">5</span>, no_above<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>corpus <span class="op">=</span> [dictionary.doc2bow(text) <span class="cf">for</span> text <span class="kw">in</span> Desc_stemmed]</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>ldamodel <span class="op">=</span> gensim.models.ldamodel.LdaModel(corpus, </span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>                                           num_topics<span class="op">=</span><span class="dv">1</span>, </span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>                                           id2word <span class="op">=</span> dictionary, </span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>                                           passes<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>                                           random_state<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>fig,ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> []</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> []</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> re.split(re.escape(<span class="st">' + '</span>) <span class="op">+</span> <span class="st">'|'</span> <span class="op">+</span> re.escape(<span class="st">'*'</span>), ldamodel.print_topics(num_topics<span class="op">=</span><span class="dv">1</span>, num_words<span class="op">=</span><span class="dv">20</span>)[<span class="dv">0</span>][<span class="dv">1</span>]):</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> count <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>        y.insert(<span class="dv">0</span>,<span class="bu">float</span>(i))</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>        x.insert(<span class="dv">0</span>,i)</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>ax.barh(x,y,height<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>ax.set_title(categories[<span class="dv">19</span>])</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-32-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿Comments</strong>: - The tag words in most categories can accurately reflect the content of the movies invovled in that category, such as “gay”, “love” and “teen” for LGBTQ movies, “murder”, “mystery”, “secret” and “killer” for Thrillers and “team”, “player”, “soccer” and “champion” for sports movies. - By adding those punctuations into myStopWords, there are mostly meaningful words in the graphs. - The “Movies” category that was mentioned before might be some movies about holidays, because of the keywords “friend”, “christma” and “holiday” in the chart.</p>
+<blockquote class="blockquote">
+<p>Visualize the output with wordcloud graph</p>
+</blockquote>
+<div class="cell" data-execution_count="44">
+<div class="cell-output cell-output-display">
+<p><img src="2022-08-31-Final_Project_files/figure-html/cell-33-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p><strong>🍿Comments</strong>: - The wordcloud graph visualizes the outcome to a more readable form. Specifically, the size of the words appeared in the graph is aligned with their appearing frequency in the document. - Though there are still several meaningless marks and some of the words are not closely related to the category, there are a bunch of useful words that can generalize the movie category.</p>
+<p><strong>🌟A Little Idea</strong>: After I’ve done this, it occurs to me an interesting game, which is to use mainly the words provided in the graph to form a sentence related to that category. For instance, we form a sentence related to Documentaries with the words in this graph——“Documentaries are footages about people exploring the world and telling their stories”.</p>
+</section>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<hr>
+<p>The project has successfully extracted tags from the corpus of a category of movies and has made the outcome visualized. Besides, the result manifests the <strong>feasibility</strong> to extract keywords from a set of short paragraphs that share some common features, so the methodology might be useful in the future to extract keywords from a set of <strong>comments</strong> with similarity in the <strong>topic</strong> and the <strong>sentiment</strong>.</p>
+<p>Movie tags extraction is a promising way to increase the popularity of underestimated movies, and enables more people to enjoy the fun of watching a film that fits their appetites in the holiday. With the rapid development of data science, I believe that in the near future, not only the movies, but also the classic novel, the operas and all other forms of art will be classified and stored in a more fine-grained way, which will make it easier for people to study on them, and dig out more interesting points about them.</p>
+<p>If you have any feedbacks or suggestions on how to improve my work, please let me know in the comments.</p>
+<p>Thank you!</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
